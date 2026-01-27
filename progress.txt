@@ -80,3 +80,14 @@
   Iteration headers use '--- Iteration N/M ---' format. Completion/stop messages
   show iteration count and reason. Exit code 0 on completion, 1 on stop/error.
   All quality checks pass: cargo check, cargo test, cargo clippy -- -D warnings.
+
+[2026-01-27 02:00] Story 11: Integration test with mock agent - COMPLETE
+  Notes: Created integration test in wiggle-puppy-core/tests/integration.rs.
+  Mock agent script is generated dynamically in tests, tracks call count via
+  temp file, and outputs completion phrase on specified iteration.
+  Three test cases: (1) test_runner_completes_on_third_iteration verifies
+  loop runs exactly 3 iterations and returns Outcome::Completed with
+  CompletionPhraseDetected reason; (2) test_runner_stops_at_max_iterations
+  verifies max iterations limit works; (3) test_mock_agent_echoes_input
+  verifies prompt is passed to agent correctly.
+  All quality checks pass: cargo check, cargo test --all, cargo clippy -- -D warnings.

@@ -183,7 +183,7 @@
       "title": "Integration test with mock agent",
       "description": "Create an integration test that uses a mock agent script to verify the full loop works correctly.",
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Test script that echoes input and outputs completion phrase on 3rd call",
         "Integration test in wiggle-puppy-core/tests/ or wiggle-puppy-cli/tests/",
