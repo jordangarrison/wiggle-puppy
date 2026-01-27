@@ -19,8 +19,34 @@
         rustToolchain = pkgs.rust-bin.stable.latest.default.override {
           extensions = [ "rust-src" "rust-analyzer" ];
         };
+
+        wiggle-puppy = pkgs.rustPlatform.buildRustPackage {
+          pname = "wiggle-puppy";
+          version = "0.1.0";
+          src = ./.;
+          cargoLock.lockFile = ./Cargo.lock;
+
+          # Only build the CLI binary
+          cargoBuildFlags = [ "-p" "wiggle-puppy-cli" ];
+
+          meta = with pkgs.lib; {
+            description = "Autonomous AI agent loop in Rust";
+            homepage = "https://github.com/jordangarrison/wiggle-puppy";
+            license = licenses.mit;
+            mainProgram = "wiggle-puppy";
+          };
+        };
       in
       {
+        packages = {
+          default = wiggle-puppy;
+          wiggle-puppy = wiggle-puppy;
+        };
+
+        apps.default = flake-utils.lib.mkApp {
+          drv = wiggle-puppy;
+        };
+
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = [
             rustToolchain
