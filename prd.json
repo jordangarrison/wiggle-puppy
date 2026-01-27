@@ -54,7 +54,7 @@
       "title": "Event system",
       "description": "Create wiggle-puppy-core/src/event.rs with Event enum for TUI consumption. Use tokio mpsc channels. Events cover iteration lifecycle, agent output, completion, errors.",
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Event enum with variants: Started, IterationStarted, AgentOutput, AgentFinished, StoryCompleted, IterationFinished, PrdUpdated, Progress, Warning, Error, Completed, Stopped",
         "CompletionReason enum: AllStoriesComplete, CompletionPhraseDetected, Both",
