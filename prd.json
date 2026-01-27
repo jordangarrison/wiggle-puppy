@@ -141,7 +141,7 @@
       "title": "CLI argument parsing",
       "description": "Create wiggle-puppy-cli/src/main.rs with clap-based CLI. Support prompt file or inline prompt, agent command/args, max iterations, state file, completion phrase, delay, verbose flag.",
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Cli struct with clap Parser derive",
         "Positional prompt_file argument (optional)",

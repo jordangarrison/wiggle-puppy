@@ -60,3 +60,13 @@
   Error, Result, Event, EventReceiver, EventSender, CompletionReason, StopReason,
   Prd, Story, StoryStatus, Runner, RunnerHandle, Outcome, and channel function.
   Module-level documentation present. cargo doc --no-deps succeeds.
+
+[2026-01-27 01:00] Story 9: CLI argument parsing - COMPLETE
+  Notes: Implemented clap-based CLI in wiggle-puppy-cli/src/main.rs with Parser derive.
+  Positional prompt_file argument (optional), -p/--prompt for inline prompt (with conflicts_with).
+  -a/--agent with WIGGLE_PUPPY_AGENT env support, --agent-args (default: -p),
+  -m/--max-iterations (default: 20), -s/--state for PRD path, -c/--completion phrase,
+  -d/--delay in seconds, -v/--verbose flag, --no-auto-instruction flag.
+  Added Cli::to_config() method to convert CLI args to Config struct.
+  All quality checks pass: cargo check, cargo test, cargo clippy -- -D warnings.
+  cargo build --release succeeds. wiggle-puppy --help produces comprehensive output.
