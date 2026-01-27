@@ -70,3 +70,13 @@
   Added Cli::to_config() method to convert CLI args to Config struct.
   All quality checks pass: cargo check, cargo test, cargo clippy -- -D warnings.
   cargo build --release succeeds. wiggle-puppy --help produces comprehensive output.
+
+[2026-01-27 01:15] Story 10: CLI event handling and output - COMPLETE
+  Notes: Implemented full event handling loop in main.rs. Added print_header() that
+  shows agent command, max iterations, and state file. print_prd_summary() loads and
+  displays PRD progress if state file provided. EventHandler struct tracks output for
+  verbose vs non-verbose modes. In verbose mode, agent output streams directly to
+  stdout/stderr. In non-verbose mode, shows line count, duration, and last 3 lines.
+  Iteration headers use '--- Iteration N/M ---' format. Completion/stop messages
+  show iteration count and reason. Exit code 0 on completion, 1 on stop/error.
+  All quality checks pass: cargo check, cargo test, cargo clippy -- -D warnings.

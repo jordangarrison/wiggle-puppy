@@ -164,7 +164,7 @@
       "title": "CLI event handling and output",
       "description": "Implement the event consumer loop in wiggle-puppy-cli that prints formatted output. Show iteration progress, PRD status, agent output (verbose or summary), completion/stop messages.",
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Prints header with agent, max iterations, state file",
         "Shows PRD progress summary if state file provided",
