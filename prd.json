@@ -36,7 +36,7 @@
       "title": "PRD types and parsing",
       "description": "Create wiggle-puppy-core/src/prd.rs with Prd and Story structs. Support loading/saving JSON, checking completion, finding next story by priority, and respecting dependencies.",
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Prd struct with branchName, name, description, stories fields",
         "Story struct with id, title, description, priority, passes, acceptance_criteria, depends_on",
