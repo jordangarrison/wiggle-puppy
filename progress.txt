@@ -35,3 +35,10 @@
   Includes agent_display() for formatted command output, get_prompt() that
   reads from file or text with auto-completion instruction support.
   Comprehensive unit tests covering defaults, builder, and prompt handling.
+
+[2026-01-27 00:15] Story 6: Agent execution - COMPLETE
+  Notes: Agent struct spawns external processes, streams stdout/stderr via events.
+  AgentOutput captures stdout, stderr, combined output, exit code, and duration.
+  Helper methods: contains() for phrase detection, last_lines() for summaries.
+  Uses tokio::select! for concurrent stdout/stderr reading. Proper error handling
+  distinguishes AgentNotFound vs general AgentError.

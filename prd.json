@@ -87,7 +87,7 @@
       "title": "Agent execution",
       "description": "Create wiggle-puppy-core/src/agent.rs with Agent struct that spawns the AI CLI, streams output via events, and returns AgentOutput with exit code and duration.",
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Agent struct with command and args fields",
         "Agent::new() constructor",
