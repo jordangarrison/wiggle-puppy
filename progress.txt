@@ -1,0 +1,15 @@
+# Ralph Rust Implementation - Progress Log
+
+## Codebase Patterns
+
+(Add reusable patterns discovered during implementation here)
+
+---
+
+## Progress
+
+[2026-01-26 23:30] Story 1: Workspace and project structure - COMPLETE
+  Notes: Created workspace with resolver="2", both crates configured correctly.
+  wiggle-puppy-core uses workspace dependencies. wiggle-puppy-cli has [[bin]] section.
+  cargo check passes.
+

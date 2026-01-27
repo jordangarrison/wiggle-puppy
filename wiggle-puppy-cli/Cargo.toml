@@ -1,0 +1,16 @@
+[package]
+name = "wiggle-puppy-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "wiggle-puppy"
+path = "src/main.rs"
+
+[dependencies]
+wiggle-puppy-core = { path = "../wiggle-puppy-core" }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }

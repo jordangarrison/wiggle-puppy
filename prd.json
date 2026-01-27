@@ -1,0 +1,213 @@
+{
+  "name": "Wiggle Puppy - Rust Implementation",
+  "branchName": "feature/wiggle-puppy-rust",
+  "description": "A Rust implementation of the Wiggle Puppy autonomous AI agent loop. Workspace structure with wiggle-puppy-core library and wiggle-puppy-cli binary. Designed for future TUI extension.",
+  "stories": [
+    {
+      "id": "1",
+      "title": "Workspace and project structure",
+      "description": "Create the Cargo workspace with wiggle-puppy-core and wiggle-puppy-cli crates. Set up shared dependencies in workspace Cargo.toml.",
+      "priority": 1,
+      "passes": true,
+      "acceptance_criteria": [
+        "Workspace Cargo.toml exists with resolver = '2' and both members",
+        "wiggle-puppy-core/Cargo.toml exists with library configuration",
+        "wiggle-puppy-cli/Cargo.toml exists with [[bin]] named 'wiggle-puppy'",
+        "cargo check succeeds at workspace root"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "2",
+      "title": "Error types",
+      "description": "Create wiggle-puppy-core/src/error.rs with thiserror-based error enum covering PRD parsing, agent execution, config, and prompt errors.",
+      "priority": 2,
+      "passes": false,
+      "acceptance_criteria": [
+        "Error enum with variants: PrdReadError, PrdParseError, PrdWriteError, PromptReadError, AgentError, AgentNotFound, NoPrompt, ConfigError, Cancelled, Other",
+        "All variants have descriptive #[error] messages",
+        "Result<T> type alias exported",
+        "cargo check passes"
+      ],
+      "depends_on": ["1"]
+    },
+    {
+      "id": "3",
+      "title": "PRD types and parsing",
+      "description": "Create wiggle-puppy-core/src/prd.rs with Prd and Story structs. Support loading/saving JSON, checking completion, finding next story by priority, and respecting dependencies.",
+      "priority": 3,
+      "passes": false,
+      "acceptance_criteria": [
+        "Prd struct with branchName, name, description, stories fields",
+        "Story struct with id, title, description, priority, passes, acceptance_criteria, depends_on",
+        "Prd::load() and Prd::save() for JSON file I/O",
+        "Prd::is_complete() returns true only when all stories pass",
+        "Prd::next_story() returns highest priority incomplete story with met dependencies",
+        "Story::status() returns Pending, Blocked, InProgress, or Complete",
+        "Unit tests for dependency blocking and priority ordering",
+        "cargo test passes"
+      ],
+      "depends_on": ["2"]
+    },
+    {
+      "id": "4",
+      "title": "Event system",
+      "description": "Create wiggle-puppy-core/src/event.rs with Event enum for TUI consumption. Use tokio mpsc channels. Events cover iteration lifecycle, agent output, completion, errors.",
+      "priority": 4,
+      "passes": false,
+      "acceptance_criteria": [
+        "Event enum with variants: Started, IterationStarted, AgentOutput, AgentFinished, StoryCompleted, IterationFinished, PrdUpdated, Progress, Warning, Error, Completed, Stopped",
+        "CompletionReason enum: AllStoriesComplete, CompletionPhraseDetected, Both",
+        "StopReason enum: MaxIterations, Cancelled, FatalError",
+        "EventSender and EventReceiver type aliases for mpsc channels",
+        "channel() function to create sender/receiver pair",
+        "Helper constructors: Event::progress(), Event::warning(), Event::error(), Event::agent_output()",
+        "cargo check passes"
+      ],
+      "depends_on": ["3"]
+    },
+    {
+      "id": "5",
+      "title": "Configuration",
+      "description": "Create wiggle-puppy-core/src/config.rs with Config struct and builder pattern. Support agent command/args, max iterations, delay, completion phrase, PRD path, prompt path/text.",
+      "priority": 5,
+      "passes": false,
+      "acceptance_criteria": [
+        "Config struct with all fields: agent_command, agent_args, max_iterations, delay, completion_phrase, prd_path, prompt_path, prompt_text, progress_path, auto_completion_instruction",
+        "Default impl with sensible defaults (claude -p, 20 iterations, 2s delay)",
+        "Builder methods for all fields",
+        "agent_display() returns formatted command string",
+        "get_prompt() reads from file or returns text, appends completion instruction if enabled",
+        "cargo check passes"
+      ],
+      "depends_on": ["2"]
+    },
+    {
+      "id": "6",
+      "title": "Agent execution",
+      "description": "Create wiggle-puppy-core/src/agent.rs with Agent struct that spawns the AI CLI, streams output via events, and returns AgentOutput with exit code and duration.",
+      "priority": 6,
+      "passes": false,
+      "acceptance_criteria": [
+        "Agent struct with command and args fields",
+        "Agent::new() constructor",
+        "Agent::run() async method that spawns process, streams stdout/stderr to EventSender, returns AgentOutput",
+        "AgentOutput struct with stdout, stderr, combined, exit_code, duration_secs",
+        "AgentOutput::contains() checks for phrase in combined output",
+        "AgentOutput::last_lines() returns last N lines",
+        "Proper error handling for command not found vs execution failure",
+        "cargo check passes"
+      ],
+      "depends_on": ["4", "5"]
+    },
+    {
+      "id": "7",
+      "title": "Runner core loop",
+      "description": "Create wiggle-puppy-core/src/runner.rs with Runner struct that executes the main loop. Re-reads prompt and PRD each iteration. Checks completion via phrase detection and PRD state. Supports cancellation.",
+      "priority": 7,
+      "passes": false,
+      "acceptance_criteria": [
+        "Runner struct with config, events sender, cancel flag",
+        "Runner::new() returns (Runner, EventReceiver, RunnerHandle)",
+        "RunnerHandle with cancel() and is_cancelled() methods",
+        "Runner::run() async method implementing the loop",
+        "Re-reads prompt file each iteration for stateful prompts",
+        "Re-reads PRD each iteration to check for agent updates",
+        "Detects completion via phrase in output OR all PRD stories passing",
+        "Emits appropriate events throughout lifecycle",
+        "Respects max_iterations limit",
+        "Respects cancellation flag",
+        "Returns Outcome::Completed or Outcome::Stopped with stats",
+        "cargo check passes"
+      ],
+      "depends_on": ["6"]
+    },
+    {
+      "id": "8",
+      "title": "Library exports",
+      "description": "Create wiggle-puppy-core/src/lib.rs that re-exports all public types from submodules.",
+      "priority": 8,
+      "passes": false,
+      "acceptance_criteria": [
+        "Declares all submodules: agent, config, error, event, prd, runner",
+        "Re-exports: Agent, AgentOutput, Config, Error, Result, Event, EventReceiver, EventSender, Prd, Story, StoryStatus, Runner, RunnerHandle, Outcome",
+        "Module-level documentation",
+        "cargo doc --no-deps succeeds"
+      ],
+      "depends_on": ["7"]
+    },
+    {
+      "id": "9",
+      "title": "CLI argument parsing",
+      "description": "Create wiggle-puppy-cli/src/main.rs with clap-based CLI. Support prompt file or inline prompt, agent command/args, max iterations, state file, completion phrase, delay, verbose flag.",
+      "priority": 9,
+      "passes": false,
+      "acceptance_criteria": [
+        "Cli struct with clap Parser derive",
+        "Positional prompt_file argument (optional)",
+        "-p/--prompt for inline prompt (conflicts with prompt_file)",
+        "-a/--agent for agent command (default: claude, env: WIGGLE_PUPPY_AGENT)",
+        "--agent-args for agent arguments (default: -p)",
+        "-m/--max-iterations (default: 20)",
+        "-s/--state for PRD JSON path",
+        "-c/--completion for completion phrase",
+        "-d/--delay in seconds",
+        "-v/--verbose flag",
+        "--no-auto-instruction flag",
+        "wiggle-puppy --help produces sensible output",
+        "cargo build --release succeeds"
+      ],
+      "depends_on": ["8"]
+    },
+    {
+      "id": "10",
+      "title": "CLI event handling and output",
+      "description": "Implement the event consumer loop in wiggle-puppy-cli that prints formatted output. Show iteration progress, PRD status, agent output (verbose or summary), completion/stop messages.",
+      "priority": 10,
+      "passes": false,
+      "acceptance_criteria": [
+        "Prints header with agent, max iterations, state file",
+        "Shows PRD progress summary if state file provided",
+        "Prints iteration headers like '--- Iteration 1/20 ---'",
+        "In verbose mode, prints all agent output as it streams",
+        "In non-verbose mode, prints summary (line count + last 3 lines)",
+        "Prints completion message with iteration count and reason",
+        "Prints stop message with reason (max iterations, cancelled, error)",
+        "Exit code 0 on completion, 1 on stop",
+        "cargo run -- --help works"
+      ],
+      "depends_on": ["9"]
+    },
+    {
+      "id": "11",
+      "title": "Integration test with mock agent",
+      "description": "Create an integration test that uses a mock agent script to verify the full loop works correctly.",
+      "priority": 11,
+      "passes": false,
+      "acceptance_criteria": [
+        "Test script that echoes input and outputs completion phrase on 3rd call",
+        "Integration test in wiggle-puppy-core/tests/ or wiggle-puppy-cli/tests/",
+        "Test verifies loop runs exactly 3 iterations",
+        "Test verifies Outcome::Completed is returned",
+        "cargo test --all succeeds"
+      ],
+      "depends_on": ["10"]
+    },
+    {
+      "id": "12",
+      "title": "README and documentation",
+      "description": "Create README.md with installation, usage examples, and architecture overview.",
+      "priority": 12,
+      "passes": false,
+      "acceptance_criteria": [
+        "README.md exists at workspace root",
+        "Installation section (cargo install from path)",
+        "Usage examples: basic, with PRD, inline prompt, custom agent",
+        "Architecture section explaining workspace structure",
+        "Future plans section mentioning TUI",
+        "Example prd.json included or referenced"
+      ],
+      "depends_on": ["11"]
+    }
+  ]
+}
