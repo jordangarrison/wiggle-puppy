@@ -71,7 +71,7 @@
       "title": "Configuration",
       "description": "Create wiggle-puppy-core/src/config.rs with Config struct and builder pattern. Support agent command/args, max iterations, delay, completion phrase, PRD path, prompt path/text.",
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Config struct with all fields: agent_command, agent_args, max_iterations, delay, completion_phrase, prd_path, prompt_path, prompt_text, progress_path, auto_completion_instruction",
         "Default impl with sensible defaults (claude -p, 20 iterations, 2s delay)",

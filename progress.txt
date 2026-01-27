@@ -13,3 +13,25 @@
   wiggle-puppy-core uses workspace dependencies. wiggle-puppy-cli has [[bin]] section.
   cargo check passes.
 
+
+[2026-01-26 23:49] Story 2: Error types - COMPLETE
+  Notes: Created thiserror-based Error enum with all required variants.
+  Added helper constructors for common error creation patterns.
+  Result<T> type alias exported from lib.rs.
+
+[2026-01-26 23:50] Story 3: PRD types and parsing - COMPLETE
+  Notes: Implemented Prd and Story structs with load/save JSON I/O.
+  Added next_story() with dependency checking and priority sorting.
+  Story::status() requires passing completed IDs for flexibility.
+  13 unit tests pass.
+
+[2026-01-26 23:51] Story 4: Event system - COMPLETE
+  Notes: Event enum with all lifecycle variants. CompletionReason and StopReason
+  for outcome reporting. Channel functions use tokio mpsc with 100 buffer default.
+  Helper constructors for progress/warning/error/agent_output.
+
+[2026-01-27 00:05] Story 5: Configuration - COMPLETE
+  Notes: Config struct with builder pattern for all agent/runner settings.
+  Includes agent_display() for formatted command output, get_prompt() that
+  reads from file or text with auto-completion instruction support.
+  Comprehensive unit tests covering defaults, builder, and prompt handling.
