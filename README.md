@@ -32,6 +32,106 @@ cargo build --release
 # The binary will be at target/release/wiggle-puppy
 ```
 
+### Nix flake
+
+```bash
+# Run without installing
+nix run github:jordangarrison/wiggle-puppy
+
+# Install to your profile
+nix profile install github:jordangarrison/wiggle-puppy
+
+# Build locally
+nix build github:jordangarrison/wiggle-puppy
+```
+
+#### Using in your own flake
+
+Add wiggle-puppy as an input in your `flake.nix`:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    wiggle-puppy = {
+      url = "github:jordangarrison/wiggle-puppy";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { self, nixpkgs, wiggle-puppy, ... }: {
+    # Your outputs here
+  };
+}
+```
+
+Then use the package in your configuration:
+
+**NixOS configuration:**
+
+```nix
+{ pkgs, wiggle-puppy, ... }:
+{
+  environment.systemPackages = [
+    wiggle-puppy.packages.${pkgs.system}.default
+  ];
+}
+```
+
+**home-manager:**
+
+```nix
+{ pkgs, wiggle-puppy, ... }:
+{
+  home.packages = [
+    wiggle-puppy.packages.${pkgs.system}.default
+  ];
+}
+```
+
+Make sure to pass `wiggle-puppy` to your modules via `specialArgs` or `extraSpecialArgs`:
+
+```nix
+# NixOS
+nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+  system = "x86_64-linux";
+  specialArgs = { inherit wiggle-puppy; };
+  modules = [ ./configuration.nix ];
+};
+
+# home-manager
+homeConfigurations.myuser = home-manager.lib.homeManagerConfiguration {
+  pkgs = nixpkgs.legacyPackages.x86_64-linux;
+  extraSpecialArgs = { inherit wiggle-puppy; };
+  modules = [ ./home.nix ];
+};
+```
+
+### Devbox (Jetify)
+
+Add wiggle-puppy to your `devbox.json` using the flake reference:
+
+```json
+{
+  "packages": [
+    "github:jordangarrison/wiggle-puppy"
+  ]
+}
+```
+
+Or add it via the CLI:
+
+```bash
+devbox add github:jordangarrison/wiggle-puppy
+```
+
+Then enter the devbox shell:
+
+```bash
+devbox shell
+wiggle-puppy --help
+```
+
 ## Usage
 
 ### Basic usage with a prompt file
