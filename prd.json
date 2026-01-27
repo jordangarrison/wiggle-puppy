@@ -22,7 +22,7 @@
       "title": "Error types",
       "description": "Create wiggle-puppy-core/src/error.rs with thiserror-based error enum covering PRD parsing, agent execution, config, and prompt errors.",
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Error enum with variants: PrdReadError, PrdParseError, PrdWriteError, PromptReadError, AgentError, AgentNotFound, NoPrompt, ConfigError, Cancelled, Other",
         "All variants have descriptive #[error] messages",
