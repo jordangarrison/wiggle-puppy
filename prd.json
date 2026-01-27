@@ -198,7 +198,7 @@
       "title": "README and documentation",
       "description": "Create README.md with installation, usage examples, and architecture overview.",
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "README.md exists at workspace root",
         "Installation section (cargo install from path)",

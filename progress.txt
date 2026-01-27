@@ -91,3 +91,14 @@
   verifies max iterations limit works; (3) test_mock_agent_echoes_input
   verifies prompt is passed to agent correctly.
   All quality checks pass: cargo check, cargo test --all, cargo clippy -- -D warnings.
+
+[2026-01-27 02:30] Story 12: README and documentation - COMPLETE
+  Notes: Created comprehensive README.md at workspace root with all required sections:
+  - Installation section with cargo install from path
+  - Usage examples covering: basic prompt file, inline prompt, PRD state file, custom agent
+  - Full CLI options reference
+  - Architecture section explaining workspace structure and design principles
+  - Key types documentation
+  - PRD JSON format example
+  - Future plans section mentioning TUI, web interface, parallel agents, plugin system
+  All quality checks pass: cargo check, cargo test, cargo clippy -- -D warnings.
