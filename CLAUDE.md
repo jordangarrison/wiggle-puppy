@@ -38,6 +38,10 @@ Each session works on **ONE story only**.
 3. Append progress to `progress.txt`
 4. Exit
 
+### Step 5: Exit
+
+When the story is complete exit the agent run.
+
 ## Key Files
 
 - `prd.json` - Stories to implement
