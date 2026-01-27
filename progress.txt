@@ -42,3 +42,13 @@
   Helper methods: contains() for phrase detection, last_lines() for summaries.
   Uses tokio::select! for concurrent stdout/stderr reading. Proper error handling
   distinguishes AgentNotFound vs general AgentError.
+
+[2026-01-27 00:30] Story 7: Runner core loop - COMPLETE
+  Notes: Runner struct with config, events sender, cancel flag. Runner::new()
+  returns (Runner, EventReceiver, RunnerHandle) tuple for consumer flexibility.
+  RunnerHandle uses Arc<AtomicBool> for thread-safe cancellation.
+  Runner::run() implements the main loop: re-reads prompt and PRD each iteration,
+  checks completion via phrase detection OR all PRD stories passing, emits
+  appropriate events throughout lifecycle. Outcome enum with Completed/Stopped
+  variants captures iterations and reason. Comprehensive tests for cancellation,
+  max iterations, completion detection, and event emission.

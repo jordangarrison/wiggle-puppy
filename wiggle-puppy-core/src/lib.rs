@@ -9,9 +9,11 @@ pub mod config;
 pub mod error;
 pub mod event;
 pub mod prd;
+pub mod runner;
 
 pub use agent::{Agent, AgentOutput};
 pub use config::Config;
 pub use error::{Error, Result};
 pub use event::{channel, CompletionReason, Event, EventReceiver, EventSender, StopReason};
 pub use prd::{Prd, Story, StoryStatus};
+pub use runner::{Outcome, Runner, RunnerHandle};

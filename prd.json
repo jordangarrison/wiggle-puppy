@@ -105,7 +105,7 @@
       "title": "Runner core loop",
       "description": "Create wiggle-puppy-core/src/runner.rs with Runner struct that executes the main loop. Re-reads prompt and PRD each iteration. Checks completion via phrase detection and PRD state. Supports cancellation.",
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Runner struct with config, events sender, cancel flag",
         "Runner::new() returns (Runner, EventReceiver, RunnerHandle)",
