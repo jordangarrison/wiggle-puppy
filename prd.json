@@ -127,7 +127,7 @@
       "title": "Library exports",
       "description": "Create wiggle-puppy-core/src/lib.rs that re-exports all public types from submodules.",
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "acceptance_criteria": [
         "Declares all submodules: agent, config, error, event, prd, runner",
         "Re-exports: Agent, AgentOutput, Config, Error, Result, Event, EventReceiver, EventSender, Prd, Story, StoryStatus, Runner, RunnerHandle, Outcome",

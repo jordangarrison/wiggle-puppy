@@ -52,3 +52,11 @@
   appropriate events throughout lifecycle. Outcome enum with Completed/Stopped
   variants captures iterations and reason. Comprehensive tests for cancellation,
   max iterations, completion detection, and event emission.
+
+[2026-01-27 00:45] Story 8: Library exports - COMPLETE
+  Notes: lib.rs already had all required module declarations and re-exports from
+  previous stories. Verified all acceptance criteria: agent, config, error, event,
+  prd, runner modules declared. Re-exports include Agent, AgentOutput, Config,
+  Error, Result, Event, EventReceiver, EventSender, CompletionReason, StopReason,
+  Prd, Story, StoryStatus, Runner, RunnerHandle, Outcome, and channel function.
+  Module-level documentation present. cargo doc --no-deps succeeds.
