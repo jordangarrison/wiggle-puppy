@@ -43,6 +43,28 @@ pub enum Event {
         duration_secs: f64,
     },
 
+    /// Claude Code error pattern detected in output.
+    AgentErrorDetected {
+        /// The error pattern that was detected.
+        pattern: String,
+    },
+
+    /// Agent process timed out and was killed.
+    AgentTimeout {
+        /// The timeout duration in seconds.
+        timeout_secs: u64,
+    },
+
+    /// Retry is being scheduled.
+    RetryScheduled {
+        /// Backoff duration in seconds before retry.
+        backoff_secs: u64,
+        /// Current attempt number.
+        attempt: u32,
+        /// Maximum number of retries.
+        max_retries: u32,
+    },
+
     /// A story has been marked as complete.
     StoryCompleted {
         /// The story ID.
@@ -125,6 +147,11 @@ pub enum StopReason {
         /// The error message.
         message: String,
     },
+    /// Circuit breaker triggered after consecutive failures.
+    CircuitBreakerTriggered {
+        /// Number of consecutive failures that triggered the circuit breaker.
+        consecutive_failures: u32,
+    },
 }
 
 /// Sender for events.
@@ -204,6 +231,13 @@ impl std::fmt::Display for StopReason {
             StopReason::MaxIterations => write!(f, "maximum iterations reached"),
             StopReason::Cancelled => write!(f, "cancelled"),
             StopReason::FatalError { message } => write!(f, "fatal error: {}", message),
+            StopReason::CircuitBreakerTriggered {
+                consecutive_failures,
+            } => write!(
+                f,
+                "circuit breaker triggered after {} consecutive failures",
+                consecutive_failures
+            ),
         }
     }
 }
@@ -266,6 +300,13 @@ mod tests {
             }
             .to_string(),
             "fatal error: disk full"
+        );
+        assert_eq!(
+            StopReason::CircuitBreakerTriggered {
+                consecutive_failures: 5
+            }
+            .to_string(),
+            "circuit breaker triggered after 5 consecutive failures"
         );
     }
 }

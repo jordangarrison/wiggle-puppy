@@ -7,9 +7,10 @@
 use crate::error::{Error, Result};
 use crate::event::{Event, EventSender};
 use std::process::Stdio;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
+use tokio::time::timeout;
 
 /// An agent that can be spawned to execute tasks.
 ///
@@ -21,22 +22,45 @@ pub struct Agent {
     command: String,
     /// Arguments to pass to the command.
     args: Vec<String>,
+    /// Patterns to detect in output that indicate an error.
+    error_patterns: Vec<String>,
+    /// Timeout in seconds for the agent process.
+    timeout_secs: u64,
 }
 
 impl Agent {
-    /// Create a new agent with the given command and arguments.
+    /// Create a new agent with the given command, arguments, error patterns, and timeout.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - The command to run (e.g., "claude", "aider").
+    /// * `args` - Arguments to pass to the command.
+    /// * `error_patterns` - Patterns to detect in output that indicate an error.
+    /// * `timeout_secs` - Timeout in seconds for the agent process.
     ///
     /// # Examples
     ///
     /// ```
     /// use wiggle_puppy_core::Agent;
     ///
-    /// let agent = Agent::new("claude", vec!["-p".to_string()]);
+    /// let agent = Agent::new(
+    ///     "claude",
+    ///     vec!["-p".to_string()],
+    ///     vec!["FATAL ERROR".to_string()],
+    ///     300,
+    /// );
     /// ```
-    pub fn new(command: impl Into<String>, args: Vec<String>) -> Self {
+    pub fn new(
+        command: impl Into<String>,
+        args: Vec<String>,
+        error_patterns: Vec<String>,
+        timeout_secs: u64,
+    ) -> Self {
         Self {
             command: command.into(),
             args,
+            error_patterns,
+            timeout_secs,
         }
     }
 
@@ -105,6 +129,9 @@ impl Agent {
         let mut stderr_lines = Vec::new();
         let mut combined_lines = Vec::new();
 
+        // Track error patterns detected during streaming
+        let mut detected_error: Option<String> = None;
+
         // Read stdout and stderr concurrently
         loop {
             tokio::select! {
@@ -114,6 +141,12 @@ impl Agent {
                             stdout_lines.push(text.clone());
                             combined_lines.push(text.clone());
                             let _ = events.send(Event::agent_output(&text)).await;
+                            // Check for error patterns
+                            for pattern in &self.error_patterns {
+                                if text.contains(pattern) {
+                                    detected_error = Some(pattern.clone());
+                                }
+                            }
                         }
                         Ok(None) => {
                             // stdout closed, but stderr might still have data
@@ -122,6 +155,12 @@ impl Agent {
                                 stderr_lines.push(text.clone());
                                 combined_lines.push(text.clone());
                                 let _ = events.send(Event::agent_stderr(&text)).await;
+                                // Check for error patterns in stderr
+                                for pattern in &self.error_patterns {
+                                    if text.contains(pattern) {
+                                        detected_error = Some(pattern.clone());
+                                    }
+                                }
                             }
                             break;
                         }
@@ -137,6 +176,12 @@ impl Agent {
                             stderr_lines.push(text.clone());
                             combined_lines.push(text.clone());
                             let _ = events.send(Event::agent_stderr(&text)).await;
+                            // Check for error patterns
+                            for pattern in &self.error_patterns {
+                                if text.contains(pattern) {
+                                    detected_error = Some(pattern.clone());
+                                }
+                            }
                         }
                         Ok(None) => {
                             // stderr closed, continue with stdout only
@@ -149,9 +194,35 @@ impl Agent {
             }
         }
 
-        let status = child.wait().await.map_err(|e| Error::AgentError {
-            message: format!("failed to wait for agent process: {}", e),
-        })?;
+        // Handle detected error pattern
+        if let Some(pattern) = detected_error {
+            let _ = child.kill().await;
+            let _ = events
+                .send(Event::AgentErrorDetected {
+                    pattern: pattern.clone(),
+                })
+                .await;
+            return Err(Error::agent_error_detected(pattern));
+        }
+
+        // Wait for process with timeout
+        let status = match timeout(Duration::from_secs(self.timeout_secs), child.wait()).await {
+            Ok(Ok(status)) => status,
+            Ok(Err(e)) => {
+                return Err(Error::AgentError {
+                    message: format!("wait failed: {}", e),
+                })
+            }
+            Err(_) => {
+                let _ = child.kill().await;
+                let _ = events
+                    .send(Event::AgentTimeout {
+                        timeout_secs: self.timeout_secs,
+                    })
+                    .await;
+                return Err(Error::agent_timeout(self.timeout_secs));
+            }
+        };
 
         let duration_secs = start.elapsed().as_secs_f64();
         let exit_code = status.code();
@@ -189,6 +260,30 @@ pub struct AgentOutput {
 }
 
 impl AgentOutput {
+    /// Create an empty AgentOutput for retry scenarios.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use wiggle_puppy_core::AgentOutput;
+    ///
+    /// let output = AgentOutput::empty();
+    /// assert!(output.stdout.is_empty());
+    /// assert!(output.stderr.is_empty());
+    /// assert!(output.combined.is_empty());
+    /// assert_eq!(output.exit_code, None);
+    /// assert_eq!(output.duration_secs, 0.0);
+    /// ```
+    pub fn empty() -> Self {
+        Self {
+            stdout: String::new(),
+            stderr: String::new(),
+            combined: String::new(),
+            exit_code: None,
+            duration_secs: 0.0,
+        }
+    }
+
     /// Check if the combined output contains the given phrase.
     ///
     /// # Examples
@@ -257,9 +352,26 @@ mod tests {
 
     #[test]
     fn test_agent_new() {
-        let agent = Agent::new("claude", vec!["-p".to_string()]);
+        let agent = Agent::new(
+            "claude",
+            vec!["-p".to_string()],
+            vec!["FATAL ERROR".to_string()],
+            300,
+        );
         assert_eq!(agent.command(), "claude");
         assert_eq!(agent.args(), &["-p".to_string()]);
+    }
+
+    #[test]
+    fn test_agent_output_empty() {
+        let output = AgentOutput::empty();
+        assert!(output.stdout.is_empty());
+        assert!(output.stderr.is_empty());
+        assert!(output.combined.is_empty());
+        assert_eq!(output.exit_code, None);
+        assert_eq!(output.duration_secs, 0.0);
+        assert!(!output.success());
+        assert_eq!(output.line_count(), 0);
     }
 
     #[test]
@@ -351,7 +463,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_agent_run_echo() {
-        let agent = Agent::new("echo", vec![]);
+        let agent = Agent::new("echo", vec![], vec![], 60);
         let (tx, mut rx) = channel();
 
         let result = agent.run("hello world", &tx).await;
@@ -372,7 +484,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_agent_run_not_found() {
-        let agent = Agent::new("nonexistent-command-that-does-not-exist", vec![]);
+        let agent = Agent::new("nonexistent-command-that-does-not-exist", vec![], vec![], 60);
         let (tx, _rx) = channel();
 
         let result = agent.run("test", &tx).await;
@@ -389,7 +501,7 @@ mod tests {
     #[tokio::test]
     async fn test_agent_run_with_stderr() {
         // Use sh to echo to stderr
-        let agent = Agent::new("sh", vec!["-c".to_string()]);
+        let agent = Agent::new("sh", vec!["-c".to_string()], vec![], 60);
         let (tx, mut rx) = channel();
 
         let result = agent

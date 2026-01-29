@@ -91,6 +91,26 @@ pub struct Cli {
     /// phrase is appended to the prompt. Use this flag to disable that behavior.
     #[arg(long = "no-auto-instruction")]
     pub no_auto_instruction: bool,
+
+    /// Agent execution timeout in seconds.
+    #[arg(long = "agent-timeout", default_value = "900")]
+    pub agent_timeout: u64,
+
+    /// Maximum retry attempts after error/timeout.
+    #[arg(long = "max-retries", default_value = "3")]
+    pub max_retries: u32,
+
+    /// Circuit breaker threshold (stop after N consecutive failures).
+    #[arg(long = "circuit-breaker", default_value = "5")]
+    pub circuit_breaker: u32,
+
+    /// Additional error patterns to detect (can be specified multiple times).
+    #[arg(long = "error-pattern", action = clap::ArgAction::Append)]
+    pub error_patterns: Vec<String>,
+
+    /// Disable default error pattern detection.
+    #[arg(long = "no-error-patterns")]
+    pub no_error_patterns: bool,
 }
 
 impl Cli {
@@ -114,6 +134,18 @@ impl Cli {
 
         if let Some(ref path) = self.state {
             config = config.prd_path(path);
+        }
+
+        config = config
+            .agent_timeout_secs(self.agent_timeout)
+            .max_retries(self.max_retries)
+            .circuit_breaker_threshold(self.circuit_breaker);
+
+        if self.no_error_patterns {
+            config = config.no_error_patterns();
+        }
+        for pattern in &self.error_patterns {
+            config = config.add_error_pattern(pattern);
         }
 
         config
@@ -281,6 +313,25 @@ impl EventHandler {
                 eprintln!("  Error: {}", message);
             }
 
+            Event::AgentErrorDetected { pattern } => {
+                eprintln!("  Error pattern detected: {}", pattern);
+            }
+
+            Event::AgentTimeout { timeout_secs } => {
+                eprintln!("  Agent timed out after {} seconds", timeout_secs);
+            }
+
+            Event::RetryScheduled {
+                backoff_secs,
+                attempt,
+                max_retries,
+            } => {
+                println!(
+                    "  Retrying in {} seconds (attempt {}/{})",
+                    backoff_secs, attempt, max_retries
+                );
+            }
+
             Event::Completed { iterations, reason } => {
                 println!("======================================");
                 println!(
@@ -319,6 +370,9 @@ fn format_stop_reason(reason: &StopReason) -> String {
         StopReason::MaxIterations => "Maximum iterations reached".to_string(),
         StopReason::Cancelled => "Cancelled by user".to_string(),
         StopReason::FatalError { message } => format!("Fatal error: {}", message),
+        StopReason::CircuitBreakerTriggered { consecutive_failures } => {
+            format!("Circuit breaker triggered after {} consecutive failures", consecutive_failures)
+        }
     }
 }
 

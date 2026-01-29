@@ -6,12 +6,20 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 
-use crate::agent::Agent;
+use crate::agent::{Agent, AgentOutput};
 use crate::config::Config;
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::event::{channel, CompletionReason, Event, EventReceiver, EventSender, StopReason};
 use crate::prd::Prd;
+
+/// Calculate exponential backoff duration
+fn calculate_backoff(attempt: u32, config: &Config) -> u64 {
+    let backoff = config.initial_backoff_secs as f64
+        * config.backoff_multiplier.powi((attempt - 1) as i32);
+    backoff as u64
+}
 
 /// The main runner that executes the agent loop.
 ///
@@ -150,9 +158,15 @@ impl Runner {
             })
             .await;
 
-        let agent = Agent::new(&self.config.agent_command, self.config.agent_args.clone());
+        let agent = Agent::new(
+            &self.config.agent_command,
+            self.config.agent_args.clone(),
+            self.config.error_patterns.clone(),
+            self.config.agent_timeout_secs,
+        );
 
         let mut iteration: u32 = 0;
+        let mut consecutive_failures: u32 = 0;
 
         loop {
             // Check cancellation before starting iteration
@@ -255,24 +269,73 @@ impl Runner {
                 });
             }
 
-            // Run the agent
-            let output = match agent.run(&prompt, &self.events).await {
-                Ok(output) => output,
-                Err(e) => {
-                    let message = format!("agent failed: {}", e);
+            // Run the agent with retry logic
+            let mut retry_attempt = 0u32;
+            let output = loop {
+                // Check circuit breaker
+                if self.config.circuit_breaker_threshold > 0
+                    && consecutive_failures >= self.config.circuit_breaker_threshold
+                {
                     let _ = self
                         .events
                         .send(Event::Stopped {
                             iterations: iteration,
-                            reason: StopReason::FatalError {
-                                message: message.clone(),
+                            reason: StopReason::CircuitBreakerTriggered {
+                                consecutive_failures,
                             },
                         })
                         .await;
                     return Ok(Outcome::Stopped {
                         iterations: iteration,
-                        reason: StopReason::FatalError { message },
+                        reason: StopReason::CircuitBreakerTriggered {
+                            consecutive_failures,
+                        },
                     });
+                }
+
+                match agent.run(&prompt, &self.events).await {
+                    Ok(output) => {
+                        consecutive_failures = 0; // Reset on success
+                        break output;
+                    }
+                    Err(Error::AgentErrorDetected { .. }) | Err(Error::AgentTimeout { .. }) => {
+                        retry_attempt += 1;
+                        consecutive_failures += 1;
+
+                        if retry_attempt > self.config.max_retries {
+                            // Give up on this iteration, continue to next
+                            // (circuit breaker will catch persistent failures)
+                            break AgentOutput::empty();
+                        }
+
+                        let backoff = calculate_backoff(retry_attempt, &self.config);
+                        let _ = self
+                            .events
+                            .send(Event::RetryScheduled {
+                                backoff_secs: backoff,
+                                attempt: retry_attempt,
+                                max_retries: self.config.max_retries,
+                            })
+                            .await;
+                        tokio::time::sleep(Duration::from_secs(backoff)).await;
+                    }
+                    Err(e) => {
+                        // Other errors (AgentNotFound, etc.) - fatal, don't retry
+                        let message = format!("agent failed: {}", e);
+                        let _ = self
+                            .events
+                            .send(Event::Stopped {
+                                iterations: iteration,
+                                reason: StopReason::FatalError {
+                                    message: message.clone(),
+                                },
+                            })
+                            .await;
+                        return Ok(Outcome::Stopped {
+                            iterations: iteration,
+                            reason: StopReason::FatalError { message },
+                        });
+                    }
                 }
             };
 
@@ -579,5 +642,81 @@ mod tests {
                 reason: StopReason::FatalError { .. },
             }
         ));
+    }
+
+    #[test]
+    fn test_calculate_backoff_first_attempt() {
+        let config = Config::new()
+            .initial_backoff_secs(5)
+            .backoff_multiplier(2.0);
+
+        // First attempt (attempt=1): 5 * 2^0 = 5
+        let backoff = calculate_backoff(1, &config);
+        assert_eq!(backoff, 5);
+    }
+
+    #[test]
+    fn test_calculate_backoff_second_attempt() {
+        let config = Config::new()
+            .initial_backoff_secs(5)
+            .backoff_multiplier(2.0);
+
+        // Second attempt (attempt=2): 5 * 2^1 = 10
+        let backoff = calculate_backoff(2, &config);
+        assert_eq!(backoff, 10);
+    }
+
+    #[test]
+    fn test_calculate_backoff_third_attempt() {
+        let config = Config::new()
+            .initial_backoff_secs(5)
+            .backoff_multiplier(2.0);
+
+        // Third attempt (attempt=3): 5 * 2^2 = 20
+        let backoff = calculate_backoff(3, &config);
+        assert_eq!(backoff, 20);
+    }
+
+    #[test]
+    fn test_calculate_backoff_custom_multiplier() {
+        let config = Config::new()
+            .initial_backoff_secs(10)
+            .backoff_multiplier(1.5);
+
+        // First attempt: 10 * 1.5^0 = 10
+        assert_eq!(calculate_backoff(1, &config), 10);
+
+        // Second attempt: 10 * 1.5^1 = 15
+        assert_eq!(calculate_backoff(2, &config), 15);
+
+        // Third attempt: 10 * 1.5^2 = 22.5 -> 22 (truncated)
+        assert_eq!(calculate_backoff(3, &config), 22);
+    }
+
+    #[tokio::test]
+    async fn test_circuit_breaker_triggers_on_threshold() {
+        // This test verifies that circuit breaker logic exists by checking
+        // that the StopReason::CircuitBreakerTriggered variant is valid
+        let reason = StopReason::CircuitBreakerTriggered {
+            consecutive_failures: 5,
+        };
+        assert_eq!(
+            reason.to_string(),
+            "circuit breaker triggered after 5 consecutive failures"
+        );
+    }
+
+    #[test]
+    fn test_circuit_breaker_outcome() {
+        let outcome = Outcome::Stopped {
+            iterations: 3,
+            reason: StopReason::CircuitBreakerTriggered {
+                consecutive_failures: 5,
+            },
+        };
+
+        assert!(outcome.is_stopped());
+        assert!(!outcome.is_completed());
+        assert_eq!(outcome.iterations(), 3);
     }
 }

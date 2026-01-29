@@ -57,6 +57,20 @@ pub enum Error {
         message: String,
     },
 
+    /// An error pattern was detected in the agent output.
+    #[error("agent error pattern detected: {pattern}")]
+    AgentErrorDetected {
+        /// The pattern that was detected.
+        pattern: String,
+    },
+
+    /// The agent timed out during execution.
+    #[error("agent timed out after {timeout_secs} seconds")]
+    AgentTimeout {
+        /// The timeout duration in seconds.
+        timeout_secs: u64,
+    },
+
     /// The configured agent command was not found.
     #[error("agent command not found: '{command}'")]
     AgentNotFound {
@@ -93,6 +107,18 @@ impl Error {
         Self::AgentError {
             message: message.into(),
         }
+    }
+
+    /// Create a new `AgentErrorDetected` error for the given pattern.
+    pub fn agent_error_detected(pattern: impl Into<String>) -> Self {
+        Self::AgentErrorDetected {
+            pattern: pattern.into(),
+        }
+    }
+
+    /// Create a new `AgentTimeout` error for the given timeout duration.
+    pub fn agent_timeout(timeout_secs: u64) -> Self {
+        Self::AgentTimeout { timeout_secs }
     }
 
     /// Create a new `AgentNotFound` error for the given command.
@@ -137,6 +163,13 @@ mod tests {
 
         let err = Error::agent_not_found("nonexistent-agent");
         assert!(err.to_string().contains("nonexistent-agent"));
+
+        let err = Error::agent_error_detected("FATAL ERROR");
+        assert!(err.to_string().contains("agent error pattern detected"));
+        assert!(err.to_string().contains("FATAL ERROR"));
+
+        let err = Error::agent_timeout(300);
+        assert!(err.to_string().contains("agent timed out after 300 seconds"));
 
         let err = Error::config_error("invalid max_iterations");
         assert!(err.to_string().contains("invalid max_iterations"));
