@@ -206,9 +206,9 @@ impl EventHandler {
 
                 if self.verbose {
                     if is_stderr {
-                        eprint!("{}", text);
+                        eprintln!("{}", text);
                     } else {
-                        print!("{}", text);
+                        println!("{}", text);
                     }
                 }
             }
