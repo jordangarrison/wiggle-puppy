@@ -450,7 +450,9 @@ mod tests {
     #[test]
     fn test_add_error_pattern_builder() {
         let config = Config::new().add_error_pattern("additional error");
-        assert!(config.error_patterns.contains(&"additional error".to_string()));
+        assert!(config
+            .error_patterns
+            .contains(&"additional error".to_string()));
         // Should still have default patterns plus the new one
         assert!(config.error_patterns.len() > 1);
     }

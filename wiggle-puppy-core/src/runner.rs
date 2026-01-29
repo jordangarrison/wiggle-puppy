@@ -16,8 +16,8 @@ use crate::prd::Prd;
 
 /// Calculate exponential backoff duration
 fn calculate_backoff(attempt: u32, config: &Config) -> u64 {
-    let backoff = config.initial_backoff_secs as f64
-        * config.backoff_multiplier.powi((attempt - 1) as i32);
+    let backoff =
+        config.initial_backoff_secs as f64 * config.backoff_multiplier.powi((attempt - 1) as i32);
     backoff as u64
 }
 

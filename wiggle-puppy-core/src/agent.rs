@@ -484,7 +484,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_agent_run_not_found() {
-        let agent = Agent::new("nonexistent-command-that-does-not-exist", vec![], vec![], 60);
+        let agent = Agent::new(
+            "nonexistent-command-that-does-not-exist",
+            vec![],
+            vec![],
+            60,
+        );
         let (tx, _rx) = channel();
 
         let result = agent.run("test", &tx).await;

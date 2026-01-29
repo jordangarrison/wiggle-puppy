@@ -370,8 +370,13 @@ fn format_stop_reason(reason: &StopReason) -> String {
         StopReason::MaxIterations => "Maximum iterations reached".to_string(),
         StopReason::Cancelled => "Cancelled by user".to_string(),
         StopReason::FatalError { message } => format!("Fatal error: {}", message),
-        StopReason::CircuitBreakerTriggered { consecutive_failures } => {
-            format!("Circuit breaker triggered after {} consecutive failures", consecutive_failures)
+        StopReason::CircuitBreakerTriggered {
+            consecutive_failures,
+        } => {
+            format!(
+                "Circuit breaker triggered after {} consecutive failures",
+                consecutive_failures
+            )
         }
     }
 }

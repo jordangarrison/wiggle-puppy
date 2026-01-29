@@ -169,7 +169,9 @@ mod tests {
         assert!(err.to_string().contains("FATAL ERROR"));
 
         let err = Error::agent_timeout(300);
-        assert!(err.to_string().contains("agent timed out after 300 seconds"));
+        assert!(err
+            .to_string()
+            .contains("agent timed out after 300 seconds"));
 
         let err = Error::config_error("invalid max_iterations");
         assert!(err.to_string().contains("invalid max_iterations"));
