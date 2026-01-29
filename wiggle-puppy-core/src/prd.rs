@@ -127,7 +127,11 @@ impl Prd {
         self.stories
             .iter()
             .filter(|s| !s.passes)
-            .filter(|s| s.depends_on.iter().all(|dep| completed.contains(dep.as_str())))
+            .filter(|s| {
+                s.depends_on
+                    .iter()
+                    .all(|dep| completed.contains(dep.as_str()))
+            })
             .min_by_key(|s| s.priority)
     }
 
@@ -149,7 +153,11 @@ impl Story {
     pub fn status(&self, completed_ids: &HashSet<&str>) -> StoryStatus {
         if self.passes {
             StoryStatus::Complete
-        } else if self.depends_on.iter().all(|dep| completed_ids.contains(dep.as_str())) {
+        } else if self
+            .depends_on
+            .iter()
+            .all(|dep| completed_ids.contains(dep.as_str()))
+        {
             StoryStatus::Pending
         } else {
             StoryStatus::Blocked

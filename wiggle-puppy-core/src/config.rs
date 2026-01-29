@@ -100,11 +100,7 @@ impl Config {
 
     /// Set the agent arguments from a string (space-separated).
     pub fn agent_args_str(mut self, args: impl Into<String>) -> Self {
-        self.agent_args = args
-            .into()
-            .split_whitespace()
-            .map(String::from)
-            .collect();
+        self.agent_args = args.into().split_whitespace().map(String::from).collect();
         self
     }
 

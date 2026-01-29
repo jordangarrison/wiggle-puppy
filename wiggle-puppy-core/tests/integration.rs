@@ -52,20 +52,14 @@ fi
 #[tokio::test]
 async fn test_runner_completes_on_third_iteration() {
     // Create a temporary directory for test artifacts
-    let temp_dir = std::env::temp_dir().join(format!(
-        "wiggle_puppy_test_{}",
-        std::process::id()
-    ));
+    let temp_dir = std::env::temp_dir().join(format!("wiggle_puppy_test_{}", std::process::id()));
     fs::create_dir_all(&temp_dir).expect("failed to create temp dir");
 
     let script_path = temp_dir.join("mock_agent.sh");
     let counter_path = temp_dir.join("call_count.txt");
 
     // Create mock agent script that completes on 3rd call
-    let script_content = create_mock_agent_script(
-        counter_path.to_str().unwrap(),
-        3,
-    );
+    let script_content = create_mock_agent_script(counter_path.to_str().unwrap(), 3);
     fs::write(&script_path, script_content).expect("failed to write script");
 
     // Make script executable
@@ -162,10 +156,8 @@ async fn test_runner_completes_on_third_iteration() {
 #[tokio::test]
 async fn test_runner_stops_at_max_iterations() {
     // Create a temporary directory for test artifacts
-    let temp_dir = std::env::temp_dir().join(format!(
-        "wiggle_puppy_test_max_iter_{}",
-        std::process::id()
-    ));
+    let temp_dir =
+        std::env::temp_dir().join(format!("wiggle_puppy_test_max_iter_{}", std::process::id()));
     fs::create_dir_all(&temp_dir).expect("failed to create temp dir");
 
     let script_path = temp_dir.join("mock_agent_never_complete.sh");
@@ -238,20 +230,15 @@ async fn test_runner_stops_at_max_iterations() {
 #[tokio::test]
 async fn test_mock_agent_echoes_input() {
     // Create a temporary directory for test artifacts
-    let temp_dir = std::env::temp_dir().join(format!(
-        "wiggle_puppy_test_echo_{}",
-        std::process::id()
-    ));
+    let temp_dir =
+        std::env::temp_dir().join(format!("wiggle_puppy_test_echo_{}", std::process::id()));
     fs::create_dir_all(&temp_dir).expect("failed to create temp dir");
 
     let script_path = temp_dir.join("mock_agent_echo.sh");
     let counter_path = temp_dir.join("call_count.txt");
 
     // Create mock agent script that completes on 1st call
-    let script_content = create_mock_agent_script(
-        counter_path.to_str().unwrap(),
-        1,
-    );
+    let script_content = create_mock_agent_script(counter_path.to_str().unwrap(), 1);
     fs::write(&script_path, script_content).expect("failed to write script");
 
     // Make script executable

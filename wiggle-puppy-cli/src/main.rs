@@ -3,9 +3,7 @@
 use clap::Parser;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use wiggle_puppy_core::{
-    CompletionReason, Event, EventReceiver, Outcome, Prd, Runner, StopReason,
-};
+use wiggle_puppy_core::{CompletionReason, Event, EventReceiver, Outcome, Prd, Runner, StopReason};
 
 /// Wiggle Puppy - Run autonomous AI agent loops with completion detection.
 ///
@@ -66,7 +64,11 @@ pub struct Cli {
     /// Completion phrase to detect in agent output.
     ///
     /// When this phrase is detected in the agent's output, the loop completes.
-    #[arg(short = 'c', long = "completion", default_value = "<promise>COMPLETE</promise>")]
+    #[arg(
+        short = 'c',
+        long = "completion",
+        default_value = "<promise>COMPLETE</promise>"
+    )]
     pub completion: String,
 
     /// Delay in seconds between iterations.

@@ -191,7 +191,9 @@ impl std::fmt::Display for CompletionReason {
         match self {
             CompletionReason::AllStoriesComplete => write!(f, "all stories complete"),
             CompletionReason::CompletionPhraseDetected => write!(f, "completion phrase detected"),
-            CompletionReason::Both => write!(f, "all stories complete and completion phrase detected"),
+            CompletionReason::Both => {
+                write!(f, "all stories complete and completion phrase detected")
+            }
         }
     }
 }

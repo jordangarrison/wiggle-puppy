@@ -150,10 +150,7 @@ impl Runner {
             })
             .await;
 
-        let agent = Agent::new(
-            &self.config.agent_command,
-            self.config.agent_args.clone(),
-        );
+        let agent = Agent::new(&self.config.agent_command, self.config.agent_args.clone());
 
         let mut iteration: u32 = 0;
 
@@ -297,7 +294,10 @@ impl Runner {
                     Err(e) => {
                         let _ = self
                             .events
-                            .send(Event::warning(format!("failed to read PRD after agent: {}", e)))
+                            .send(Event::warning(format!(
+                                "failed to read PRD after agent: {}",
+                                e
+                            )))
                             .await;
                         false
                     }
@@ -449,9 +449,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_runner_cancellation_before_start() {
-        let config = Config::new()
-            .prompt_text("test prompt")
-            .max_iterations(10);
+        let config = Config::new().prompt_text("test prompt").max_iterations(10);
         let (runner, _rx, handle) = Runner::new(config);
 
         // Cancel immediately
@@ -543,7 +541,8 @@ mod tests {
         // Should have AgentOutput or AgentFinished
         assert!(events
             .iter()
-            .any(|e| matches!(e, Event::AgentOutput { .. }) || matches!(e, Event::AgentFinished { .. })));
+            .any(|e| matches!(e, Event::AgentOutput { .. })
+                || matches!(e, Event::AgentFinished { .. })));
 
         // Should have Completed
         assert!(events.iter().any(|e| matches!(e, Event::Completed { .. })));
